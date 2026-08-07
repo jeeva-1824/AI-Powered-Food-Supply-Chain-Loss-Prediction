@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Koyambedu Market",
+    "city": "Chennai",
+    "lat": 13.0694,
+    "lon": 80.1936
+  },
+  {
+    "name": "Madurai Mandi",
+    "city": "Madurai",
+    "lat": 9.9252,
+    "lon": 78.1198
+  },
+  {
+    "name": "Salem Market",
+    "city": "Salem",
+    "lat": 11.6643,
+    "lon": 78.1460
+  },
+  {
+    "name": "Coimbatore Market",
+    "city": "Coimbatore",
+    "lat": 11.0168,
+    "lon": 76.9558
+  },
+  {
+    "name": "Trichy Market",
+    "city": "Tiruchirappalli",
+    "lat": 10.7905,
+    "lon": 78.7047
+  }
+]

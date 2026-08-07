@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Live Supply Chain Map{% endblock %}
+{% block page_title %}Route Optimization Center{% endblock %}
+
+{% block head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #mainMap {
+        height: 75vh;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        background: #f0f4f8;
+    }
+    .map-sidebar {
+        height: 75vh;
+        overflow-y: auto;
+    }
+    .best-route-indicator {
+        display: inline-block;
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        color: white;
+        border-radius: 50px;
+        font-weight: bold;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        margin-bottom: 12px;
+    }
+    .route-card {
+        border-left: 4px solid #ccc;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+    .route-card.best {
+        border-left-color: #22c55e;
+        background: #f0fdf4;
+        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+    }
+    .route-card.alternate {
+        border-left-color: #f97316;
+        background: #fffbf0;
+    }
+    .route-card.risky {
+        border-left-color: #ef4444;
+        background: #fef2f2;
+    }
+    .route-score {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Map Canvas -->
+    <div class="col-lg-9">
+        <div class="card-startup p-2">
+            <div id="mainMap"></div>
+
+            <div class="p-3 border-top mt-2">
+                <div class="d-flex gap-4 flex-wrap justify-content-between align-items-center">
+                    <div class="d-flex gap-4 flex-wrap">
+                        <div class="d-flex align-items-center gap-2 small fw-bold">
+                            <span style="width: 16px; height: 16px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,0.8); border: 2px solid #fff;"></span>
+                            <span>Best Route (Recommended)</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 small text-muted">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #f97316; opacity: 0.6;"></span>
+                            <span>Alternate Route</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 small text-muted">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444; opacity: 0.4;"></span>
+                            <span>Risky Route</span>
+                        </div>
+                    </div>
+                    <div class="small text-muted">
+                        <i class="fas fa-info-circle me-1"></i> Click routes in sidebar for details
+                    </div>
+                </div>
+                <div class="mt-2 d-flex align-items-center gap-3">
+                    <label class="mb-0 small d-flex align-items-center gap-2">
+                        <input type="checkbox" id="toggleAlternates" checked>
+                        <span>Show alternates & risky</span>
+                    </label>
+                    <small class="text-muted">Toggle visibility of non-recommended routes</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Details Sidebar -->
+    <div class="col-lg-3">
+        <div class="card-startup map-sidebar">
+            <h5 class="mb-4 d-flex align-items-center justify-content-between">
+                <span>Route Analysis</span>
+                <i class="fas fa-route text-success small"></i>
+            </h5>
+
+            <div id="noRouteInfo" class="text-center py-5">
+                <i class="fas fa-map-marked-alt fa-3x text-light mb-3"></i>
+                <p class="text-muted small">No active prediction found. Run an AI Predictor to see route scoring.</p>
+                <a href="{{ url_for('predict') }}" class="btn btn-sm btn-light-startup">Start Prediction</a>
+            </div>
+
+            <div id="routeInfo" class="d-none">
+                <div class="p-3 bg-primary-light rounded-3 mb-4">
+                    <div class="small text-muted mb-1 text-uppercase tracking-wider">Logistics Summary</div>
+                    <h6 class="mb-0 fw-bold" id="foodType">Rice Transport</h6>
+                    <div class="h5 fw-800 text-primary mt-2 mb-0" id="distanceVal">0.0 KM</div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="best-route-indicator">
+                        <i class="fas fa-trophy me-2"></i> Best Route Highlighted
+                    </div>
+
+                    <label class="label-startup mb-2">Route Comparison</label>
+                    <div id="routeSegmentsList">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-3 border-top">
+                    <button class="btn btn-primary-startup w-100 mb-2" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i> Export Report
+                    </button>
+                    <p class="x-small text-muted text-center mb-0">
+                        Route analysis by <strong>AgroRoute AI</strong> v3.0<br>
+                        Free route optimization using OpenStreetMap
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const routes = JSON.parse('{{ routes_json | safe }}');
+        const prediction = JSON.parse('{{ prediction_json | safe }}');
+
+        const map = L.map('mainMap').setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap | Powered by AgroRoute AI',
+            maxZoom: 19
+        }).addTo(map);
+
+        const markets = JSON.parse('{{ markets_json | safe }}');
+        const nearestMarket = JSON.parse('{{ nearest_market_json | safe }}');
+
+        if (markets && markets.length) {
+            markets.forEach((market) => {
+                const marker = L.marker([market.lat, market.lon]).addTo(map);
+                marker.bindPopup(`<strong>${market.name}</strong><br>${market.city}<br><small>Certified Agri Market</small>`);
+            });
+        }
+
+        if (nearestMarket && nearestMarket.lat) {
+            const nearestIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: '<div style="background: #f59e0b; width: 18px; height: 18px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 10px rgba(245,145,24,0.6);"></div>',
+                iconSize: [26, 26]
+            });
+            L.marker([nearestMarket.lat, nearestMarket.lon], {icon: nearestIcon}).addTo(map)
+                .bindPopup(`<strong>Nearest Mandi</strong><br>${nearestMarket.name}`);
+        }
+
+        if (prediction && prediction.src) {
+            document.getElementById('noRouteInfo').classList.add('d-none');
+            document.getElementById('routeInfo').classList.remove('d-none');
+            document.getElementById('foodType').textContent = prediction.food_type;
+            document.getElementById('distanceVal').textContent = prediction.distance + ' KM';
+
+            // Custom Icons
+            const srcIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: '<div style="background: linear-gradient(135deg, #2563eb, #1e40af); width: 18px; height: 18px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 12px rgba(37,99,235,0.6); display: flex; align-items: center; justify-content: center;"><i style="color: white; font-size: 8px;" class="fas fa-play"></i></div>',
+                iconSize: [26, 26],
+                popupAnchor: [0, -15]
+            });
+            const dstIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: '<div style="background: linear-gradient(135deg, #ef4444, #dc2626); width: 18px; height: 18px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 12px rgba(239,68,68,0.6); display: flex; align-items: center; justify-content: center;"><i style="color: white; font-size: 8px;" class="fas fa-flag"></i></div>',
+                iconSize: [26, 26],
+                popupAnchor: [0, -15]
+            });
+
+            L.marker([prediction.src.lat, prediction.src.lon], {icon: srcIcon}).addTo(map).bindPopup('<strong>Origin</strong><br>Start Point');
+            L.marker([prediction.dst.lat, prediction.dst.lon], {icon: dstIcon}).addTo(map).bindPopup('<strong>Destination</strong><br>End Point');
+
+            // Draw Routes with enhanced best route
+            const colors = { green: '#22c55e', orange: '#f97316', red: '#ef4444' };
+            const segmentList = document.getElementById('routeSegmentsList');
+
+            // Keep references to polylines for animation/toggle
+            const polyRefs = [];
+
+            routes.forEach((r, idx) => {
+                const isRisky = r.color === 'red';
+                const isAlternate = r.color === 'orange';
+                const isBest = r.color === 'green';
+
+                // Enhanced polyline styling for best route
+                const polyConfig = {
+                    color: colors[r.color],
+                    weight: isBest ? 7 : isAlternate ? 4 : 2,
+                    opacity: isBest ? 1 : isAlternate ? 0.7 : 0.4,
+                    dashArray: isBest ? null : (isAlternate ? '5, 5' : '2, 4'),
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                };
+
+                // Add glow effect for best route
+                if (isBest) {
+L.polyline(r.waypoints, {
+                        color: colors[r.color],
+                        weight: 12,
+                        opacity: 0.2,
+                        lineCap: 'round',
+                        lineJoin: 'round'
+                    }).addTo(map);
+                }
+
+                const poly = L.polyline(r.waypoints, polyConfig).addTo(map);
+                poly.bindTooltip(`${r.name}: ${r.distance}km, ${r.score}/100`, {sticky: false, className: 'custom-tooltip'});
+                poly.on('click', function() {
+                    map.fitBounds(poly.getBounds(), {padding: [50, 50]});
+                });
+
+                // store poly ref and related metadata
+                polyRefs.push({poly, isBest, isAlternate, isRisky, idx});
+
+                // Add to sidebar
+                const el = document.createElement('div');
+                el.className = `route-card ${isBest ? 'best' : isAlternate ? 'alternate' : 'risky'}`;
+                el.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            ${isBest ? '<i class="fas fa-trophy text-success fs-6"></i>' : isAlternate ? '<i class="fas fa-star text-warning"></i>' : '<i class="fas fa-exclamation text-danger"></i>'}
+                            <span class="fw-bold">${r.name}</span>
+                        </div>
+                        <span class="badge ${isBest ? 'bg-success' : isAlternate ? 'bg-warning' : 'bg-danger'} route-score">${r.score}</span>
+                    </div>
+                    <div class="small text-muted">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span><i class="fas fa-road me-1"></i>Distance:</span>
+                            <strong>${r.distance} KM</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span><i class="fas fa-clock me-1"></i>Time:</span>
+                            <strong>${r.estimated_time} hrs</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span><i class="fas fa-chart-line me-1"></i>Risk:</span>
+                            <strong>${prediction.risk_level || 'High'}</strong>
+                        </div>
+                    </div>
+                    ${isBest ? '<button class="btn btn-sm btn-success w-100 mt-2"><i class="fas fa-check me-1"></i> Fastest Route</button>' : '<button class="btn btn-sm btn-outline-secondary w-100 mt-2"><i class="fas fa-info-circle me-1"></i> Alternative</button>'}
+                `;
+                segmentList.appendChild(el);
+            });
+            const bounds = L.latLngBounds([prediction.src.lat, prediction.src.lon], [prediction.dst.lat, prediction.dst.lon]);
+            map.fitBounds(bounds, {padding: [100, 100]});
+
+            // Animated selection helper with pulsing glow
+            let currentHighlight = null;
+            let highlightAnimId = null;
+            let highlightStart = null;
+
+            function stopHighlightAnimation() {
+                if (highlightAnimId) {
+                    cancelAnimationFrame(highlightAnimId);
+                    highlightAnimId = null;
+                }
+                if (currentHighlight) {
+                    const ref = currentHighlight;
+                    ref.poly.setStyle({weight: ref.isBest ? 6 : ref.isAlternate ? 4 : 2, opacity: ref.isBest ? 1 : 0.6, color: ref.isBest ? '#22c55e' : ref.isAlternate ? '#f97316' : '#ef4444'});
+                    currentHighlight = null;
+                }
+            }
+
+            function animateGlow(ref) {
+                stopHighlightAnimation();
+                currentHighlight = ref;
+                const baseColor = '#2563eb';
+                const duration = 900; // ms for a full pulse cycle
+                highlightStart = performance.now();
+
+                function step(ts) {
+                    const elapsed = (ts - highlightStart) % duration;
+                    const t = elapsed / duration; // 0..1
+                    // smooth sine pulse
+                    const ease = 0.5 - 0.5 * Math.cos(Math.PI * 2 * t);
+                    const weight = 10 + 6 * ease; // 10..16
+                    const opacity = 0.6 + 0.4 * ease; // 0.6..1.0
+                    try {
+                        ref.poly.setStyle({weight: weight, opacity: opacity, color: baseColor});
+                        ref.poly.bringToFront();
+                    } catch (e) {
+                        // poly may be removed; stop animation
+                        stopHighlightAnimation();
+                        return;
+                    }
+                    highlightAnimId = requestAnimationFrame(step);
+                }
+                highlightAnimId = requestAnimationFrame(step);
+            }
+
+            function highlightRoute(index) {
+                const ref = polyRefs.find(r => r.idx === index);
+                if (!ref) return;
+                polyRefs.forEach(r => {
+                    if (r.idx === index) {
+                        r.poly.setStyle({weight: 10, opacity: 1, color: '#2563eb'});
+                        r.poly.bringToFront();
+                    } else {
+                        r.poly.setStyle({weight: r.isBest ? 6 : r.isAlternate ? 4 : 2, opacity: r.isBest ? 1 : 0.6, color: r.isBest ? '#22c55e' : r.isAlternate ? '#f97316' : '#ef4444'});
+                    }
+                });
+                animateGlow(ref);
+            }
+
+            // Legend toggle for alternates/risky
+            const toggle = document.getElementById('toggleAlternates');
+            toggle.addEventListener('change', () => {
+                const show = toggle.checked;
+                polyRefs.forEach(ref => {
+                    if (!ref.isBest) {
+                        if (show) ref.poly.addTo(map);
+                        else map.removeLayer(ref.poly);
+                    }
+                });
+            });
+
+            // Wire up sidebar clicking to animate
+            document.querySelectorAll('#routeSegmentsList .route-card').forEach((card, i) => {
+                card.addEventListener('click', () => highlightRoute(i));
+            });
+        }
+    });
+</script>
+{% endblock %}

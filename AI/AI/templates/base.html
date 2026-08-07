@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %} - AgroRoute AI</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Truck Transition Overlay -->
+    <div id="truck-overlay" class="truck-overlay">
+        <div class="truck-container text-center">
+            <div class="truck-icon"><i class="fas fa-truck-fast"></i></div>
+            <div class="truck-road"></div>
+            <p class="mt-3 fw-bold text-muted">Optimizing Supply Chain...</p>
+        </div>
+    </div>
+
+    <!-- Page Loader (Spinner) -->
+    <div id="page-loader" class="page-loader">
+        <div class="spinner-custom"></div>
+    </div>
+
+    <!-- Sidebar (User) -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-box"><i class="fas fa-leaf"></i></div>
+            <span class="brand-name">Agro<span class="text-primary">Route</span> AI</span>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="{{ url_for('dashboard') }}" class="nav-link-side {% if request.path == url_for('dashboard') %}active{% endif %}">
+                    <i class="fas fa-home"></i> <span data-i18n="nav_dashboard">Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('predict') }}" class="nav-link-side {% if request.path == url_for('predict') %}active{% endif %}">
+                    <i class="fas fa-robot"></i> <span data-i18n="nav_predict">AI Predictor</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('visualization') }}" class="nav-link-side {% if request.path == url_for('visualization') %}active{% endif %}">
+                    <i class="fas fa-chart-line"></i> <span data-i18n="nav_analytics">Analytics</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('map_view') }}" class="nav-link-side {% if request.path == url_for('map_view') %}active{% endif %}">
+                    <i class="fas fa-map-location-dot"></i> <span data-i18n="nav_map">Live Map</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('about') }}" class="nav-link-side {% if request.path == url_for('about') %}active{% endif %}">
+                    <i class="fas fa-info-circle"></i> <span data-i18n="nav_about">About</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('contact') }}" class="nav-link-side {% if request.path == url_for('contact') %}active{% endif %}">
+                    <i class="fas fa-headset"></i> <span data-i18n="nav_support">Support</span>
+                </a>
+            </li>
+            
+            {% if session.get('is_admin') %}
+            <li class="nav-item mt-3">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link-side btn-light-startup text-primary border-primary">
+                    <i class="fas fa-shield-halved"></i> Admin Panel
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="avatar-circle">{{ session.get('user_name', 'U')[0] }}</div>
+                <div class="user-info">
+                    <div class="user-name">{{ session.get('user_name', 'User') }}</div>
+                    <div class="user-role">{% if session.get('is_admin') %}Admin{% else %}Logistics Partner{% endif %}</div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="text-muted ms-auto"><i class="fas fa-sign-out-alt"></i></a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Topbar (User) -->
+    <header class="topbar">
+        <button class="btn btn-link text-muted d-lg-none me-3" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="topbar-content">
+            <h2 class="page-title">{% block page_title %}Dashboard{% endblock %}</h2>
+            <div class="top-meta">
+                <div class="meta-item d-none d-md-flex">
+                    <i class="far fa-clock"></i> <span id="liveTime">00:00:00</span>
+                </div>
+                <div class="meta-item d-none d-md-flex">
+                    <i class="fas fa-temperature-half"></i> <span id="topbarTemp">24°C</span>
+                </div>
+                <div class="topbar-actions d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" id="themeToggle" type="button" data-i18n="toggle_theme">Dark</button>
+                    <button class="btn btn-sm btn-outline-secondary" id="langToggle" type="button">TA</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+        <div class="container-fluid">
+            <!-- Toast Notifications (Container) -->
+            <div class="toast-container position-fixed top-0 end-0 p-3">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="toast show toast-startup" role="alert" aria-live="assertive" aria-atomic="true">
+                                <div class="toast-header border-0 bg-transparent">
+                                    <i class="fas {% if category == 'success' %}fa-check-circle text-success{% else %}fa-info-circle text-primary{% endif %} me-2"></i>
+                                    <strong class="me-auto text-capitalize">{{ category }}</strong>
+                                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                                </div>
+                                <div class="toast-body">{{ message }}</div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

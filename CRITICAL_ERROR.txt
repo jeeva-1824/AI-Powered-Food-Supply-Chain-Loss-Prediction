@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "c:\Desktop\AI upd\AI\AI\main.py", line 392, in predict
+    conn.execute("""
+sqlite3.OperationalError: table predictions has no column named rainfall

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Support{% endblock %}
+{% block page_title %}Network Support{% endblock %}
+
+{% block content %}
+<div class="row g-4 justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-startup border-0 shadow-sm p-5 text-center">
+            <div class="mb-4">
+                <div class="bg-primary-light text-primary d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 80px; height: 80px;">
+                    <i class="fas fa-headset fa-2x"></i>
+                </div>
+                <h3>How can we help?</h3>
+                <p class="text-muted">Our technical logistics team is available 24/7 to assist with supply chain disruptions.</p>
+            </div>
+
+            <div class="row g-4 text-start mt-2">
+                <div class="col-md-6">
+                    <div class="p-4 border rounded-3 bg-light h-100">
+                        <h6 class="fw-bold"><i class="fas fa-envelope me-2 text-primary"></i> Email Support</h6>
+                        <p class="small text-muted mb-0">support@agroroute.ai</p>
+                        <p class="small text-muted">Response within 2 hours</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-4 border rounded-3 bg-light h-100">
+                        <h6 class="fw-bold"><i class="fas fa-phone me-2 text-primary"></i> Hotlines</h6>
+                        <p class="small text-muted mb-0">+91 1800-FARM-SAFE</p>
+                        <p class="small text-muted">Priority for High-Risk routes</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 text-start">
+                <h6 class="mb-3 fw-bold">Send a Message</h6>
+                <form>
+                    <div class="mb-3">
+                        <textarea class="input-startup" rows="4" placeholder="Describe the issue or inquiry..."></textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary-startup px-5" onclick="showToast('Message sent! Support will contact you shortly.', 'success')">
+                        Submit Inquiry
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

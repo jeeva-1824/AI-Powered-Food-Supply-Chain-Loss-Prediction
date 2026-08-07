@@ -1,0 +1,110 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+{% block admin_title %}System Overview{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="stat-pill shadow-sm" style="background: #1e293b; color: #fff; border: none;">
+            <div class="icon-wrap" style="background: rgba(255,255,255,0.05); color: #3b82f6;"><i class="fas fa-users-viewfinder"></i></div>
+            <div>
+                <div class="val-big text-white">{{ total_users }}</div>
+                <div class="val-lbl text-white-50">Registered Users</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-pill shadow-sm" style="background: #1e293b; color: #fff; border: none;">
+            <div class="icon-wrap" style="background: rgba(255,255,255,0.05); color: #10b981;"><i class="fas fa-microchip"></i></div>
+            <div>
+                <div class="val-big text-white">{{ total_preds }}</div>
+                <div class="val-lbl text-white-50">Total AI Predictions</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-pill shadow-sm" style="background: #1e293b; color: #fff; border: none;">
+            <div class="icon-wrap" style="background: rgba(255,255,255,0.05); color: #ef4444;"><i class="fas fa-shield-virus"></i></div>
+            <div>
+                <div class="val-big text-white">{{ high_risk }}</div>
+                <div class="val-lbl text-white-50">Active Risk Alerts</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
+        <div class="card-startup border-0 shadow-sm mb-4" style="background: #fff;">
+            <h5 class="mb-3">System Controls</h5>
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('admin_users') }}" class="btn btn-light-startup text-start py-3 px-3">
+                    <i class="fas fa-user-gear me-2 text-primary"></i> Manage User Profiles
+                </a>
+                <a href="{{ url_for('admin_predictions') }}" class="btn btn-light-startup text-start py-3 px-3">
+                    <i class="fas fa-database me-2 text-primary"></i> Audit Predictions
+                </a>
+                <a href="{{ url_for('admin_download_db') }}" class="btn btn-light-startup text-start py-3 px-3">
+                    <i class="fas fa-file-export me-2 text-primary"></i> Export Database (SQLite)
+                </a>
+            </div>
+        </div>
+        
+        <div class="card-startup border-0 shadow-sm" style="background: #1e293b;">
+            <div class="text-center p-3">
+                <i class="fas fa-circle-nodes text-primary fa-3x mb-3"></i>
+                <h5 class="text-white">Logistics Node Status</h5>
+                <p class="text-white-50 small">All primary relay servers are operational.</p>
+                <div class="badge bg-success py-2 px-3">UPTIME: 99.9%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Global Predictions -->
+    <div class="col-lg-8">
+        <div class="card-startup border-0 shadow-sm">
+            <h5 class="mb-4">Global Network Activity</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="text-muted small text-uppercase">
+                        <tr>
+                            <th class="border-0">Partner</th>
+                            <th class="border-0">Food / Loss</th>
+                            <th class="border-0">Risk</th>
+                            <th class="border-0 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in recent_preds %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="avatar-circle" style="width: 30px; height: 30px; font-size: 0.7rem;">{{ p.name[0] if p.name else 'A' }}</div>
+                                    <span class="fw-semibold small">{{ p.name or 'Admin' }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small fw-bold">{{ p.food_type }}</div>
+                                <div class="text-muted small">Loss: {{ p.loss_percentage }}%</div>
+                            </td>
+                            <td>
+                                <span class="badge {% if p.risk_level == 'Low' %}bg-success{% elif p.risk_level == 'Moderate' %}bg-warning{% else %}bg-danger{% endif %} rounded-pill">
+                                    {{ p.risk_level }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <form action="{{ url_for('admin_delete_prediction', pid=p['id']) }}" method="POST" onsubmit="return confirm('Delete this log permanently?')">
+                                    <button type="submit" name="delete_btn" class="btn btn-sm btn-link text-danger"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

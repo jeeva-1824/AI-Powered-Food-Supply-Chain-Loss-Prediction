@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Visualization{% endblock %}
+{% block page_title %}Analytics & Insights{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<style>
+    .chart-container { position: relative; height: 400px; margin-bottom: 30px; }
+    .small-chart { height: 300px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-chart-line me-2"></i>
+            <strong>Analytics Dashboard</strong> - Comprehensive visualization of your predictions and trends
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Loss Percentage Trend Chart -->
+    <div class="col-lg-8">
+        <div class="card-startup h-100">
+            <h5 class="mb-4"><i class="fas fa-line-chart text-primary me-2"></i>Loss Percentage Trends</h5>
+            <div class="chart-container">
+                <canvas id="lossTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Distribution Pie Chart -->
+    <div class="col-lg-4">
+        <div class="card-startup h-100">
+            <h5 class="mb-4"><i class="fas fa-pie-chart text-warning me-2"></i>Risk Distribution</h5>
+            <div class="chart-container small-chart">
+                <canvas id="riskDistChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Food Category Risk Comparison -->
+    <div class="col-lg-6">
+        <div class="card-startup">
+            <h5 class="mb-4"><i class="fas fa-apple-alt text-danger me-2"></i>Food Category Risk Analysis</h5>
+            <div class="chart-container">
+                <canvas id="foodRiskChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Food Count Distribution -->
+    <div class="col-lg-6">
+        <div class="card-startup">
+            <h5 class="mb-4"><i class="fas fa-list-ul text-success me-2"></i>Predictions by Food Type</h5>
+            <div class="chart-container">
+                <canvas id="foodCountChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const lossTrends = {{ loss_trends | safe }};
+    const riskDist = {{ risk_dist | safe }};
+    const foodRisk = {{ food_risk | safe }};
+    const foodCounts = {{ food_counts | safe }};
+
+    // Loss Trend Chart
+    if (lossTrends.length > 0) {
+        new Chart(document.getElementById('lossTrendChart'), {
+            type: 'line',
+            data: {
+                labels: lossTrends.map(d => d.date),
+                datasets: [{
+                    label: 'Loss Percentage (%)',
+                    data: lossTrends.map(d => d.loss),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+    }
+
+    // Risk Distribution Pie Chart
+    new Chart(document.getElementById('riskDistChart'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(riskDist),
+            datasets: [{
+                data: Object.values(riskDist),
+                backgroundColor: ['#22c55e', '#eab308', '#ef4444'],
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // Food Risk Analysis
+    const foodRiskLabels = Object.keys(foodRisk);
+    if (foodRiskLabels.length > 0) {
+        new Chart(document.getElementById('foodRiskChart'), {
+            type: 'bar',
+            data: {
+                labels: foodRiskLabels,
+                datasets: [{
+                    label: 'Average Loss %',
+                    data: Object.values(foodRisk),
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 8,
+                    borderColor: '#ea580c',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: { x: { beginAtZero: true, max: 100 } }
+            }
+        });
+    }
+
+    // Food Count Distribution
+    const foodCountLabels = Object.keys(foodCounts);
+    if (foodCountLabels.length > 0) {
+        new Chart(document.getElementById('foodCountChart'), {
+            type: 'bar',
+            data: {
+                labels: foodCountLabels,
+                datasets: [{
+                    label: 'Number of Predictions',
+                    data: Object.values(foodCounts),
+                    backgroundColor: '#10b981',
+                    borderRadius: 8,
+                    borderColor: '#059669',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: foodCountLabels.length > 8 ? 'y' : 'x',
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+</script>
+{% endblock %}

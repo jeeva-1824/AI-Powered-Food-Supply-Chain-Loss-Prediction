@@ -1,0 +1,55 @@
+{% extends "admin_base.html" %}
+
+{% block title %}User Management{% endblock %}
+{% block admin_title %}Manage Partner Accounts{% endblock %}
+
+{% block content %}
+<div class="card-startup border-0 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="mb-0">Logistics Partners</h5>
+        <form class="d-flex gap-2" method="GET" action="{{ url_for('admin_users') }}">
+            <input type="text" name="q" class="input-startup py-1 px-3" placeholder="Search name/email..." value="{{ search or '' }}">
+            <button class="btn btn-primary-startup btn-sm px-3" type="submit"><i class="fas fa-search"></i></button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="text-muted small text-uppercase">
+                <tr>
+                    <th class="border-0">Partner ID</th>
+                    <th class="border-0">Full Name</th>
+                    <th class="border-0">Email Address</th>
+                    <th class="border-0">Joined Date</th>
+                    <th class="border-0 text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td><span class="badge bg-light text-muted">{{ u.id }}</span></td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar-circle" style="width: 32px; height: 32px; font-size: 0.8rem;">{{ u.name[0] }}</div>
+                            <span class="fw-bold">{{ u.name }}</span>
+                        </div>
+                    </td>
+                    <td class="text-muted">{{ u.email }}</td>
+                    <td class="small">{{ u.created_at }}</td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('admin_edit_user', uid=u.id) }}" class="btn btn-sm btn-light-startup">
+                                <i class="fas fa-pen-to-square"></i>
+                            </a>
+                            <form action="{{ url_for('admin_delete_user', uid=u['id']) }}" method="POST" onsubmit="return confirm('Delete user and all their predictions?')">
+                                <button type="submit" name="delete_btn" class="btn btn-sm btn-light-startup text-danger"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

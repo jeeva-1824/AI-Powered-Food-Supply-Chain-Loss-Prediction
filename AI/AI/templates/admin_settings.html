@@ -1,0 +1,107 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Admin Settings{% endblock %}
+{% block page_title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card-startup">
+            <h5 class="mb-4"><i class="fas fa-cog text-primary me-2"></i>Contact Settings</h5>
+            
+            <form method="POST" action="{{ url_for('admin_update_settings') }}">
+                <div class="form-group-startup">
+                    <label class="label-startup">Emergency Contact</label>
+                    <input type="tel" name="emergency_contact" class="input-startup" 
+                           value="{{ settings.emergency_contact }}" 
+                           placeholder="+91-9876-543210" required>
+                    <small class="text-muted d-block mt-2">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Used for urgent notifications during high-risk shipments
+                    </small>
+                </div>
+
+                <div class="form-group-startup">
+                    <label class="label-startup">Transport/Logistics Contact</label>
+                    <input type="email" name="transport_contact" class="input-startup" 
+                           value="{{ settings.transport_contact }}" 
+                           placeholder="logistics@farmhub.com" required>
+                    <small class="text-muted d-block mt-2">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Email for transportation updates and coordination
+                    </small>
+                </div>
+
+                <div class="form-group-startup">
+                    <label class="label-startup">Admin Email (Read-only)</label>
+                    <input type="email" class="input-startup" 
+                           value="{{ settings.admin_email }}" disabled>
+                </div>
+
+                <button type="submit" class="btn btn-primary-startup w-100">
+                    <i class="fas fa-save me-2"></i> Save Settings
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card-startup bg-light">
+            <h5 class="mb-4"><i class="fas fa-download text-success me-2"></i>Data Export</h5>
+            
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('admin_export_report') }}" class="btn btn-success">
+                    <i class="fas fa-file-download me-2"></i> Export Report
+                </a>
+                <a href="{{ url_for('admin_download_db') }}" class="btn btn-info">
+                    <i class="fas fa-database me-2"></i> Download Database
+                </a>
+                <a href="{{ url_for('admin_download_source') }}" class="btn btn-warning">
+                    <i class="fas fa-code me-2"></i> Download Source Code
+                </a>
+            </div>
+        </div>
+
+        <div class="card-startup mt-4">
+            <h5 class="mb-3"><i class="fas fa-shield-alt text-danger me-2"></i>Security</h5>
+            <div class="small text-muted">
+                <p><i class="fas fa-check-circle text-success me-2"></i>Admin panel is hidden</p>
+                <p><i class="fas fa-check-circle text-success me-2"></i>All passwords are hashed</p>
+                <p><i class="fas fa-check-circle text-success me-2"></i>Session-based auth enabled</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-4">
+    <div class="col-12">
+        <div class="card-startup">
+            <h5 class="mb-4"><i class="fas fa-info-circle text-info me-2"></i>System Information</h5>
+            <table class="table table-borderless mb-0">
+                <tbody>
+                    <tr>
+                        <td><strong>Application</strong></td>
+                        <td>Food Supply Chain Loss Predictor</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Version</strong></td>
+                        <td>1.0.0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Database</strong></td>
+                        <td>SQLite3</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ML Model</strong></td>
+                        <td>RandomForestClassifier (250 estimators)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Features Tracked</strong></td>
+                        <td>Temperature, Humidity, Rainfall, Transit Time, Storage Duration, Food Type</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

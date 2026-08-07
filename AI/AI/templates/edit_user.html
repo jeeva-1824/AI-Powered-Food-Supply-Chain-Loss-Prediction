@@ -1,0 +1,46 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Edit Partner{% endblock %}
+{% block admin_title %}Partner Configuration{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card-startup border-0 shadow-sm p-4">
+            <h5 class="mb-4 text-primary fw-bold"><i class="fas fa-user-pen me-2"></i> Update Profile</h5>
+            
+            <form action="{{ url_for('admin_edit_user', uid=user.id) }}" method="POST">
+                <div class="form-group-startup">
+                    <label class="label-startup">Partner Name</label>
+                    <div class="input-icon-group">
+                        <i class="fas fa-id-card"></i>
+                        <input type="text" name="name" class="input-startup" value="{{ user.name }}" required>
+                    </div>
+                </div>
+
+                <div class="form-group-startup">
+                    <label class="label-startup">Contact Email</label>
+                    <div class="input-icon-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" name="email" class="input-startup" value="{{ user.email }}" required>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 mb-4">
+                    <p class="small text-muted mb-1">Partner ID: <strong>{{ user.id }}</strong></p>
+                    <p class="small text-muted mb-0">Member Since: {{ user.created_at }}</p>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary-startup flex-grow-1">
+                        Save Changes
+                    </button>
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-light-startup">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

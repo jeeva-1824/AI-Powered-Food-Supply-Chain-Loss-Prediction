@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Logistics Overview{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-pill shadow-sm">
+            <div class="icon-wrap icon-blue"><i class="fas fa-boxes-stacked"></i></div>
+            <div>
+                <div class="val-big counter-up">{{ total_preds }}</div>
+                <div class="val-lbl">Total Predictions</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-pill shadow-sm">
+            <div class="icon-wrap icon-orange"><i class="fas fa-triangle-exclamation"></i></div>
+            <div>
+                <div class="val-big counter-up">{{ (risk_counts | fromjson)['High'] }}</div>
+                <div class="val-lbl">High Risk Alerts</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-pill shadow-sm">
+            <div class="icon-wrap icon-green"><i class="fas fa-percent"></i></div>
+            <div>
+                <div class="val-big">84%</div>
+                <div class="val-lbl">Avg. System Accuracy</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-pill shadow-sm">
+            <div class="icon-wrap icon-red"><i class="fas fa-bolt"></i></div>
+            <div>
+                <div class="val-big">Live</div>
+                <div class="val-lbl">AI Engine Status</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Main Chart -->
+    <div class="col-lg-8">
+        <div class="card-startup h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Loss Percentage Trends</h5>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-light-startup dropdown-toggle" type="button" data-bs-toggle="dropdown">Last 15 Records</button>
+                    <ul class="dropdown-menu"></ul>
+                </div>
+            </div>
+            <div style="height: 350px;">
+                <canvas id="lossTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Distribution Chart -->
+    <div class="col-lg-4">
+        <div class="card-startup h-100">
+            <h5 class="mb-4">Risk Distribution</h5>
+            <div style="height: 280px;" class="d-flex align-items-center justify-content-center">
+                <canvas id="riskDistChart"></canvas>
+            </div>
+            <div class="mt-4 border-top pt-3">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="small text-muted"><i class="fas fa-circle text-success me-1"></i> Low Risk</span>
+                    <span class="small fw-bold">{{ (risk_counts | fromjson)['Low'] }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="small text-muted"><i class="fas fa-circle text-warning me-1"></i> Moderate</span>
+                    <span class="small fw-bold">{{ (risk_counts | fromjson)['Moderate'] }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="small text-muted"><i class="fas fa-circle text-danger me-1"></i> High Risk</span>
+                    <span class="small fw-bold">{{ (risk_counts | fromjson)['High'] }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Predictions Table -->
+    <div class="col-12">
+        <div class="card-startup">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Recent Activity</h5>
+                <a href="{{ url_for('predict') }}" class="btn btn-primary-startup btn-sm">New Prediction</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0 8px;">
+                    <thead class="text-muted small text-uppercase">
+                        <tr>
+                            <th class="border-0 px-3">Food Type</th>
+                            <th class="border-0">Timestamp</th>
+                            <th class="border-0">Temp / Humid</th>
+                            <th class="border-0">Risk Level</th>
+                            <th class="border-0">Loss %</th>
+                            <th class="border-0 px-3 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if not predictions %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">No recent predictions found.</td>
+                        </tr>
+                        {% endif %}
+                        {% for p in predictions %}
+                        <tr class="shadow-sm rounded" style="background: #fff; border: 1px solid var(--border);">
+                            <td class="px-3">
+                                <span class="badge bg-primary-light text-primary px-3">{{ p.food_type }}</span>
+                            </td>
+                            <td class="text-muted small">{{ p.created_at }}</td>
+                            <td>{{ p.temperature }}°C / {{ p.humidity }}%</td>
+                            <td>
+                                <span class="badge {% if p.risk_level == 'Low' %}bg-success{% elif p.risk_level == 'Moderate' %}bg-warning{% else %}bg-danger{% endif %} rounded-pill">
+                                    {{ p.risk_level }}
+                                </span>
+                            </td>
+                            <td class="fw-bold">
+                                {{ p.loss_percentage }}%
+                            </td>
+                            <td class="px-3 text-end">
+                                <a href="{{ url_for('map_view') }}" class="btn btn-sm btn-light-startup">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const riskData = JSON.parse('{{ risk_counts | safe }}');
+        const lossTrend = JSON.parse('{{ loss_trend | safe }}');
+
+        // 1. Risk Distribution Chart (Doughnut)
+        new Chart(document.getElementById('riskDistChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Low', 'Moderate', 'High'],
+                datasets: [{
+                    data: [riskData.Low, riskData.Moderate, riskData.High],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                cutout: '75%',
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // 2. Loss Trend Chart (Line)
+        new Chart(document.getElementById('lossTrendChart'), {
+            type: 'line',
+            data: {
+                labels: lossTrend.map(v => v.date),
+                datasets: [{
+                    label: 'Loss %',
+                    data: lossTrend.map(v => v.loss),
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#2563eb'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5] }, ticks: { font: { size: 10 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    });
+</script>
+{% endblock %}

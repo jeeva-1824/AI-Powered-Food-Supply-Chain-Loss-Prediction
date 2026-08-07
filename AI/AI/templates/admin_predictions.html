@@ -1,0 +1,56 @@
+{% extends "admin_base.html" %}
+
+{% block title %}All Predictions{% endblock %}
+{% block admin_title %}System Audit Log{% endblock %}
+
+{% block content %}
+<div class="card-startup border-0 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="mb-0 h4">Prediction History</h5>
+        <div class="d-flex gap-2">
+            <span class="badge bg-primary px-3 py-2 rounded-pill">{{ predictions|length }} Records</span>
+            <a href="{{ url_for('admin_download_db') }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-download me-1"></i> CSV Export</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="text-muted small text-uppercase" style="background: #f8fafc;">
+                <tr>
+                    <th class="border-0 px-3">Partner</th>
+                    <th class="border-0">Food Type</th>
+                    <th class="border-0">Risk Level</th>
+                    <th class="border-0">Loss %</th>
+                    <th class="border-0">Timestamp</th>
+                    <th class="border-0 text-end px-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in predictions %}
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td class="px-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar-circle" style="width: 28px; height: 28px; font-size: 0.7rem; background: #e0e7ff; color: #4338ca;">{{ p.name[0] if p.name else 'A' }}</div>
+                            <span class="small fw-bold">{{ p.name or 'Admin' }}</span>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-light text-primary px-2">{{ p.food_type }}</span></td>
+                    <td>
+                        <span class="badge {% if p.risk_level == 'Low' %}bg-success{% elif p.risk_level == 'Moderate' %}bg-warning{% else %}bg-danger{% endif %} rounded-pill">
+                            {{ p.risk_level }}
+                        </span>
+                    </td>
+                    <td class="fw-bold">{{ p.loss_percentage }}%</td>
+                    <td class="text-muted small">{{ p.created_at }}</td>
+                    <td class="text-end px-3">
+                        <form action="{{ url_for('admin_delete_prediction', pid=p['id']) }}" method="POST" onsubmit="return confirm('Delete this record permanently?')">
+                            <button type="submit" name="delete_btn" class="btn btn-sm btn-outline-danger border-0"><i class="fas fa-trash-can"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
